@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
+use KnpU\OAuth2ClientBundle\Client\Provider\FacebookClient;
 use KnpU\OAuth2ClientBundle\Client\Provider\GithubClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -34,11 +35,23 @@ class SecurityController extends AbstractController
      * @return RedirectResponse
      * @Route("/connect/github", name="github_connect")
      */
-    public function connect(ClientRegistry $clientRegistry): RedirectResponse
+    public function connectGithub(ClientRegistry $clientRegistry): RedirectResponse
     {
         /** @var GithubClient $client */
         $client = $clientRegistry->getClient('github');
         return $client->redirect(['read:user', 'user:email']);
+    }
+
+    /**
+     * @param ClientRegistry $clientRegistry
+     * @return RedirectResponse
+     * @Route("/connect/facebook", name="facebook_connect")
+     */
+    public function connectFacebook(ClientRegistry $clientRegistry): RedirectResponse
+    {
+        /** @var FacebookClient $client */
+        $client = $clientRegistry->getClient('facebook');
+        return $client->redirect(['public_profile', 'email']);
     }
 
     /**

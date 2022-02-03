@@ -6,6 +6,7 @@ use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\Persistence\ManagerRegistry;
+use League\OAuth2\Client\Provider\FacebookUser;
 use League\OAuth2\Client\Provider\GithubResourceOwner;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
@@ -73,6 +74,49 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $user = (new User())
             ->setRoles(['ROLE_USER'])
             ->setGithubId($owner->getId())
+            ->setEmail($owner->getEmail());
+
+        $em->persist($user);
+        $em->flush();
+
+        return $user;
+    }
+
+    /**
+     * @param FacebookUser $owner
+     * @return User
+     * @throws NonUniqueResultException
+     */
+    public function findOrCreateFromFacebookOauth(FacebookUser $owner): User
+    {
+        $em = $this->getEntityManager();
+
+        /** @var User|null $user */
+        $user = $this->createQueryBuilder('u')
+            ->where('u.facebookId = :facebookId')
+            ->orWhere('u.email = :email')
+            ->setParameters([
+                'facebookId' => $owner->getId(),
+                'email' => $owner->getEmail()
+            ])
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($user){
+
+            if ($user->getFacebookId() === null){
+                $user->setFacebookId($owner->getId());
+
+                $em->persist($user);
+                $em->flush();
+            }
+
+            return $user;
+        }
+
+        $user = (new User())
+            ->setRoles(['ROLE_USER'])
+            ->setFacebookId($owner->getId())
             ->setEmail($owner->getEmail());
 
         $em->persist($user);

@@ -30,7 +30,7 @@ class User implements UserInterface
     private array $roles = [];
 
     /**
-     * @var null|string The hashed password
+     * The hashed password
      * @ORM\Column(type="string", nullable=true)
      */
     private ?string $password;
@@ -39,6 +39,11 @@ class User implements UserInterface
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private ?string $githubId;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private ?string $facebookId;
 
     public function getId(): ?int
     {
@@ -129,6 +134,18 @@ class User implements UserInterface
     public function setGithubId(?string $githubId): self
     {
         $this->githubId = $githubId;
+
+        return $this;
+    }
+
+    public function getFacebookId(): ?string
+    {
+        return $this->facebookId;
+    }
+
+    public function setFacebookId(?string $facebookId): self
+    {
+        $this->facebookId = $facebookId;
 
         return $this;
     }

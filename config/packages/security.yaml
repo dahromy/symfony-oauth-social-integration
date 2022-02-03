@@ -23,6 +23,7 @@ security:
                 authenticators:
                     - App\Security\AppAuthenticator
                     - App\Security\GithubAuthenticator
+                    - App\Security\FacebookAuthenticator
             logout:
                 path: app_logout
                 # where to redirect after logout
