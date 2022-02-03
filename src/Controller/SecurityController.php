@@ -5,6 +5,7 @@ namespace App\Controller;
 use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
 use KnpU\OAuth2ClientBundle\Client\Provider\FacebookClient;
 use KnpU\OAuth2ClientBundle\Client\Provider\GithubClient;
+use KnpU\OAuth2ClientBundle\Client\Provider\GoogleClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -52,6 +53,22 @@ class SecurityController extends AbstractController
         /** @var FacebookClient $client */
         $client = $clientRegistry->getClient('facebook');
         return $client->redirect(['public_profile', 'email']);
+    }
+
+    /**
+     * @param ClientRegistry $clientRegistry
+     * @return RedirectResponse
+     * @Route("/connect/google", name="google_connect")
+     */
+    public function connectGoogle(ClientRegistry $clientRegistry): RedirectResponse
+    {
+        /** @var GoogleClient $client */
+        $client = $clientRegistry->getClient('google');
+        return $client->redirect([
+            'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'openid'
+        ]);
     }
 
     /**

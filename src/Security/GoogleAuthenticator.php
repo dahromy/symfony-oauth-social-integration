@@ -9,8 +9,10 @@ use Doctrine\ORM\NonUniqueResultException;
 use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
 use KnpU\OAuth2ClientBundle\Client\OAuth2ClientInterface;
 use KnpU\OAuth2ClientBundle\Client\Provider\FacebookClient;
+use KnpU\OAuth2ClientBundle\Client\Provider\GoogleClient;
 use KnpU\OAuth2ClientBundle\Security\Authenticator\SocialAuthenticator;
 use League\OAuth2\Client\Provider\FacebookUser;
+use League\OAuth2\Client\Provider\GoogleUser;
 use League\OAuth2\Client\Token\AccessToken;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,9 +24,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
 
-class FacebookAuthenticator extends SocialAuthenticator
+class GoogleAuthenticator extends SocialAuthenticator
 {
-
     use TargetPathTrait;
 
     private RouterInterface $router;
@@ -59,7 +60,7 @@ class FacebookAuthenticator extends SocialAuthenticator
      */
     public function supports(Request $request): bool
     {
-        return 'oauth_check' === $request->attributes->get('_route') && $request->get('service') === 'facebook';
+        return 'oauth_check' === $request->attributes->get('_route') && $request->get('service') === 'google';
     }
 
     /**
@@ -79,14 +80,14 @@ class FacebookAuthenticator extends SocialAuthenticator
      */
     public function getUser($credentials, UserProviderInterface $userProvider)
     {
-        /** @var FacebookUser $facebookUser */
-        $facebookUser = $this->getClient()->fetchUserFromToken($credentials);
+        /** @var GoogleUser $googleUser */
+        $googleUser = $this->getClient()->fetchUserFromToken($credentials);
 
-        if ($facebookUser->getEmail() === null){
+        if ($googleUser->getEmail() === null){
             throw new NotVerifiedEmailException();
         }
 
-        return $this->userRepository->findOrCreateFromFacebookOauth($facebookUser);
+        return $this->userRepository->findOrCreateFromGoogleOauth($googleUser);
     }
 
     /**
@@ -116,10 +117,10 @@ class FacebookAuthenticator extends SocialAuthenticator
     }
 
     /**
-     * @return FacebookClient|OAuth2ClientInterface
+     * @return GoogleClient|OAuth2ClientInterface
      */
-    public function getClient(): FacebookClient
+    public function getClient(): GoogleClient
     {
-        return $this->clientRegistry->getClient('facebook');
+        return $this->clientRegistry->getClient('google');
     }
 }
