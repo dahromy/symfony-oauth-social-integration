@@ -30,10 +30,10 @@ class User implements UserInterface
     private array $roles = [];
 
     /**
-     * @var string The hashed password
+     * @var null|string The hashed password
      * @ORM\Column(type="string", nullable=true)
      */
-    private string $password;
+    private ?string $password;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
