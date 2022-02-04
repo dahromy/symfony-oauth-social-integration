@@ -42,158 +42,38 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * @param GithubResourceOwner $owner
-     * @return User
-     * @throws NonUniqueResultException
-     */
-    public function findOrCreateFromGithubOauth(GithubResourceOwner $owner): User
-    {
-        $em = $this->getEntityManager();
-
-        /** @var User|null $user */
-        $user = $this->createQueryBuilder('u')
-            ->where('u.githubId = :githubId')
-            ->orWhere('u.email = :email')
-            ->setParameters([
-                'githubId' => $owner->getId(),
-                'email' => $owner->getEmail()
-            ])
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        if ($user){
-
-            if ($user->getGithubId() === null){
-                $user->setGithubId($owner->getId());
-
-                $em->persist($user);
-                $em->flush();
-            }
-
-            return $user;
-        }
-
-        $user = (new User())
-            ->setRoles(['ROLE_USER'])
-            ->setGithubId($owner->getId())
-            ->setEmail($owner->getEmail());
-
-        $em->persist($user);
-        $em->flush();
-
-        return $user;
-    }
-
-    /**
-     * @param FacebookUser $owner
-     * @return User
-     * @throws NonUniqueResultException
-     */
-    public function findOrCreateFromFacebookOauth(FacebookUser $owner): User
-    {
-        $em = $this->getEntityManager();
-
-        /** @var User|null $user */
-        $user = $this->createQueryBuilder('u')
-            ->where('u.facebookId = :facebookId')
-            ->orWhere('u.email = :email')
-            ->setParameters([
-                'facebookId' => $owner->getId(),
-                'email' => $owner->getEmail()
-            ])
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        if ($user){
-
-            if ($user->getFacebookId() === null){
-                $user->setFacebookId($owner->getId());
-
-                $em->persist($user);
-                $em->flush();
-            }
-
-            return $user;
-        }
-
-        $user = (new User())
-            ->setRoles(['ROLE_USER'])
-            ->setFacebookId($owner->getId())
-            ->setEmail($owner->getEmail());
-
-        $em->persist($user);
-        $em->flush();
-
-        return $user;
-    }
-
-    /**
-     * @param GoogleUser $owner
-     * @return User
-     * @throws NonUniqueResultException
-     */
-    public function findOrCreateFromGoogleOauth(GoogleUser $owner): User
-    {
-        $em = $this->getEntityManager();
-
-        /** @var User|null $user */
-        $user = $this->createQueryBuilder('u')
-            ->where('u.googleId = :googleId')
-            ->orWhere('u.email = :email')
-            ->setParameters([
-                'googleId' => $owner->getId(),
-                'email' => $owner->getEmail()
-            ])
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        if ($user){
-
-            if ($user->getGoogleId() === null){
-                $user->setGoogleId($owner->getId());
-
-                $em->persist($user);
-                $em->flush();
-            }
-
-            return $user;
-        }
-
-        $user = (new User())
-            ->setRoles(['ROLE_USER'])
-            ->setGoogleId($owner->getId())
-            ->setEmail($owner->getEmail());
-
-        $em->persist($user);
-        $em->flush();
-
-        return $user;
-    }
-
-    /**
-     * @param InstagramResourceOwner $instagramUser
+     * @param FacebookUser|GithubResourceOwner|GoogleUser|InstagramResourceOwner $socialUser
+     * @param string $service
      * @return User|null
      * @throws NonUniqueResultException
      */
-    public function findOrCreateFromInstagramOauth(InstagramResourceOwner $instagramUser): ?User
+    public function findOrCreateFromOauth($socialUser, string $service): ?User
     {
         $em = $this->getEntityManager();
+        $_service = ucfirst($service);
+        $getMethod = "get{$_service}Id";
+        $setMethod = "set{$_service}Id";
+
+        $qb = $this->createQueryBuilder('u')
+            ->where("u.{$service}Id = :serviceId")
+            ->orWhere('u.email = :email')
+            ->setParameter('serviceId', $socialUser->getId());
+
+        if (method_exists($socialUser, 'getNickName')){
+            $qb->setParameter('email', $socialUser->getNickname());
+        }else{
+            $qb->setParameter('email', $socialUser->getEmail());
+        }
 
         /** @var User|null $user */
-        $user = $this->createQueryBuilder('u')
-            ->where('u.instagramId = :instagramId')
-            ->orWhere('u.email = :email')
-            ->setParameters([
-                'instagramId' => $instagramUser->getId(),
-                'email' => $instagramUser->getNickname()
-            ])
+        $user = $qb
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getOneOrNullResult()
+        ;
 
         if ($user){
-
-            if ($user->getGoogleId() === null){
-                $user->setGoogleId($instagramUser->getId());
+            if ($user->$getMethod() === null){
+                $user->$setMethod($socialUser->getId());
 
                 $em->persist($user);
                 $em->flush();
@@ -202,10 +82,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return $user;
         }
 
-        $user = (new User())
+        $user = new User();
+
+        $user
             ->setRoles(['ROLE_USER'])
-            ->setInstagramId($instagramUser->getId())
-            ->setEmail($instagramUser->getNickname());
+            ->$setMethod($socialUser->getId());
+
+        if (method_exists($socialUser, 'getNickName')){
+            $user->setEmail($socialUser->getNickname());
+        }else{
+            $user->setEmail($socialUser->getEmail());
+        }
 
         $em->persist($user);
         $em->flush();

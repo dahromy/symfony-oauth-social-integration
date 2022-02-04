@@ -40,13 +40,13 @@
     </button>
 
     <p>
-        <a href="{{ path('github_connect') }}">Connect with github</a>
+        <a href="{{ path('social_connect', {'service': 'github'}) }}">Connect with github</a>
         <br>
-        <a href="{{ path('facebook_connect') }}">Connect with facebook</a>
+        <a href="{{ path('social_connect', {'service': 'facebook'}) }}">Connect with facebook</a>
         <br>
-        <a href="{{ path('google_connect') }}">Connect with google</a>
+        <a href="{{ path('social_connect', {'service': 'google'}) }}">Connect with google</a>
         <br>
-        <a href="{{ path('instagram_connect') }}">Connect with instagram</a>
+        <a href="{{ path('social_connect', {'service': 'instagram'}) }}">Connect with instagram</a>
     </p>
 </form>
 {% endblock %}

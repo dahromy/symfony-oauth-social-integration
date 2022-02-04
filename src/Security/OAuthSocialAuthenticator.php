@@ -6,45 +6,56 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Security\Exception\NotVerifiedEmailException;
 use Doctrine\ORM\NonUniqueResultException;
-use Doctrine\ORM\NoResultException;
 use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
 use KnpU\OAuth2ClientBundle\Client\OAuth2ClientInterface;
+use KnpU\OAuth2ClientBundle\Client\Provider\FacebookClient;
 use KnpU\OAuth2ClientBundle\Client\Provider\GithubClient;
+use KnpU\OAuth2ClientBundle\Client\Provider\GoogleClient;
+use KnpU\OAuth2ClientBundle\Client\Provider\InstagramClient;
 use KnpU\OAuth2ClientBundle\Security\Authenticator\SocialAuthenticator;
+use League\OAuth2\Client\Provider\FacebookUser;
 use League\OAuth2\Client\Provider\GithubResourceOwner;
+use League\OAuth2\Client\Provider\GoogleUser;
+use League\OAuth2\Client\Provider\InstagramResourceOwner;
 use League\OAuth2\Client\Token\AccessToken;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
-class GithubAuthenticator extends SocialAuthenticator
+class OAuthSocialAuthenticator extends SocialAuthenticator
 {
+
     use TargetPathTrait;
 
     private RouterInterface $router;
     private ClientRegistry $clientRegistry;
     private UserRepository $userRepository;
+    private RequestStack $requestStack;
 
     /**
      * @param RouterInterface $router
      * @param ClientRegistry $clientRegistry
      * @param UserRepository $userRepository
+     * @param RequestStack $requestStack
      */
-    public function __construct(RouterInterface $router, ClientRegistry $clientRegistry, UserRepository $userRepository)
+    public function __construct(
+        RouterInterface $router,
+        ClientRegistry $clientRegistry,
+        UserRepository $userRepository,
+        RequestStack $requestStack
+    )
     {
         $this->router = $router;
         $this->clientRegistry = $clientRegistry;
         $this->userRepository = $userRepository;
+        $this->requestStack = $requestStack;
     }
 
     /**
@@ -63,7 +74,7 @@ class GithubAuthenticator extends SocialAuthenticator
      */
     public function supports(Request $request): bool
     {
-        return 'oauth_check' === $request->attributes->get('_route') && $request->get('service') === 'github';
+        return 'oauth_check' === $request->attributes->get('_route');
     }
 
     /**
@@ -72,49 +83,34 @@ class GithubAuthenticator extends SocialAuthenticator
      */
     public function getCredentials(Request $request): AccessToken
     {
-        return $this->fetchAccessToken($this->getClient());
+        return $this->fetchAccessToken($this->getClient($request));
     }
 
     /**
-     * @param AccessToken $credentials
+     * @param $credentials
      * @param UserProviderInterface $userProvider
-     * @return User
+     * @return User|UserInterface|null
      * @throws NonUniqueResultException
-     * @throws ClientExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
      */
-    public function getUser($credentials, UserProviderInterface $userProvider): User
+    public function getUser($credentials, UserProviderInterface $userProvider)
     {
-        /** @var GithubResourceOwner $githubUser */
-        $githubUser = $this->getClient()->fetchUserFromToken($credentials);
+        /** @var Request $request */
+        $request = $this->requestStack->getCurrentRequest();
 
-        // On récupère l'email de l'utilisateur
-        $response = HttpClient::create()->request(
-            'GET',
-            'https://api.github.com/user/emails',
-            [
-                'headers' => [
-                    'authorization' => "token {$credentials->getToken()}"
-                ]
-            ]
-        );
+        /** @var FacebookUser|GithubResourceOwner|GoogleUser|InstagramResourceOwner $socialUser */
+        $socialUser = $this->getClient($request)->fetchUserFromToken($credentials);
 
-        $emails = json_decode($response->getContent(), true);
-        foreach ($emails as $email) {
-            if ($email['primary'] === true && $email['verified'] === true){
-                $data = $githubUser->toArray();
-                $data['email'] = $email['email'];
-                $githubUser = new GithubResourceOwner($data);
+        if (method_exists($socialUser, 'getNickName')){
+            if ($socialUser->getNickname() === null){
+                throw new NotVerifiedEmailException();
+            }
+        }else{
+            if ($socialUser->getEmail() === null){
+                throw new NotVerifiedEmailException();
             }
         }
 
-        if ($githubUser->getEmail() === null){
-            throw new NotVerifiedEmailException();
-        }
-
-        return $this->userRepository->findOrCreateFromGithubOauth($githubUser);
+        return $this->userRepository->findOrCreateFromOauth($socialUser, $request->get('service'));
     }
 
     /**
@@ -144,10 +140,12 @@ class GithubAuthenticator extends SocialAuthenticator
     }
 
     /**
-     * @return GithubClient|OAuth2ClientInterface
+     * @param Request $request
+     * @return OAuth2ClientInterface
      */
-    public function getClient(): GithubClient
+    public function getClient(Request $request): OAuth2ClientInterface
     {
-        return $this->clientRegistry->getClient('github');
+        $service = $request->get('service');
+        return $this->clientRegistry->getClient($service);
     }
 }

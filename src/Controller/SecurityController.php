@@ -33,55 +33,47 @@ class SecurityController extends AbstractController
     }
 
     /**
+     * @param $service
      * @param ClientRegistry $clientRegistry
      * @return RedirectResponse
-     * @Route("/connect/github", name="github_connect")
+     * @Route("/connect/{service}", name="social_connect")
      */
-    public function connectGithub(ClientRegistry $clientRegistry): RedirectResponse
+    public function connect($service, ClientRegistry $clientRegistry): RedirectResponse
     {
-        /** @var GithubClient $client */
-        $client = $clientRegistry->getClient('github');
-        return $client->redirect(['read:user', 'user:email']);
+        /** @var InstagramClient|FacebookClient|GoogleClient|GithubClient $client */
+        $client = $clientRegistry->getClient($service);
+        return $client->redirect($this->getScopesFromService($service));
     }
 
     /**
-     * @param ClientRegistry $clientRegistry
-     * @return RedirectResponse
-     * @Route("/connect/facebook", name="facebook_connect")
+     * @param string $service
+     * @return array|string[]
      */
-    public function connectFacebook(ClientRegistry $clientRegistry): RedirectResponse
+    public function getScopesFromService(string $service): array
     {
-        /** @var FacebookClient $client */
-        $client = $clientRegistry->getClient('facebook');
-        return $client->redirect(['public_profile', 'email']);
-    }
+        $scopes = [];
+        switch ($service){
+            case 'github':
+                $scopes = ['read:user', 'user:email'];
+                break;
+            case 'google':
+                $scopes = [
+                    'https://www.googleapis.com/auth/userinfo.email',
+                    'https://www.googleapis.com/auth/userinfo.profile',
+                    'openid'
+                ];
+                break;
+            case 'facebook':
+                $scopes = ['public_profile', 'email'];
+                break;
+            case 'instagram':
+                $scopes = ['user_profile', 'user_media'];
+                break;
+            default:
+                break;
+        }
 
-    /**
-     * @param ClientRegistry $clientRegistry
-     * @return RedirectResponse
-     * @Route("/connect/google", name="google_connect")
-     */
-    public function connectGoogle(ClientRegistry $clientRegistry): RedirectResponse
-    {
-        /** @var GoogleClient $client */
-        $client = $clientRegistry->getClient('google');
-        return $client->redirect([
-            'https://www.googleapis.com/auth/userinfo.email',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'openid'
-        ]);
-    }
-
-    /**
-     * @param ClientRegistry $clientRegistry
-     * @return RedirectResponse
-     * @Route("/connect/instagram", name="instagram_connect")
-     */
-    public function connectInstagram(ClientRegistry $clientRegistry): RedirectResponse
-    {
-        /** @var InstagramClient $client */
-        $client = $clientRegistry->getClient('instagram');
-        return $client->redirect(['user_profile', 'user_media']);
+        return $scopes;
     }
 
     /**
