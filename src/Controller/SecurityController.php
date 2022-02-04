@@ -6,6 +6,7 @@ use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
 use KnpU\OAuth2ClientBundle\Client\Provider\FacebookClient;
 use KnpU\OAuth2ClientBundle\Client\Provider\GithubClient;
 use KnpU\OAuth2ClientBundle\Client\Provider\GoogleClient;
+use KnpU\OAuth2ClientBundle\Client\Provider\InstagramClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,6 +70,18 @@ class SecurityController extends AbstractController
             'https://www.googleapis.com/auth/userinfo.profile',
             'openid'
         ]);
+    }
+
+    /**
+     * @param ClientRegistry $clientRegistry
+     * @return RedirectResponse
+     * @Route("/connect/instagram", name="instagram_connect")
+     */
+    public function connectInstagram(ClientRegistry $clientRegistry): RedirectResponse
+    {
+        /** @var InstagramClient $client */
+        $client = $clientRegistry->getClient('instagram');
+        return $client->redirect(['user_profile', 'user_media']);
     }
 
     /**

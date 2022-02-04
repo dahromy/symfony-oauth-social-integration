@@ -97,6 +97,9 @@
     "guzzlehttp/psr7": {
         "version": "2.1.0"
     },
+    "jakeasmith/http_build_url": {
+        "version": "1.0.1"
+    },
     "knpuniversity/oauth2-client-bundle": {
         "version": "2.9",
         "recipe": {
@@ -123,6 +126,9 @@
     },
     "league/oauth2-google": {
         "version": "4.0.0"
+    },
+    "league/oauth2-instagram": {
+        "version": "3.0.0"
     },
     "monolog/monolog": {
         "version": "2.3.5"
