@@ -14,6 +14,7 @@ Notice the two `'%env(var)%'`calls? Add these anywhere in your `.env` file.
 These are the credentials for the OAuth provider. For Facebook, you'll get these by registering
 your app on [developers.facebook.com](https://developers.facebook.com/apps/), for GitHub, you'll get these by registering
 your app on [Developer settings](https://github.com/settings/developers) and for Google, on [console.developers.google](https://console.developers.google.com/apis/credentials).
+For Instagram is on [developers.facebook.com](https://developers.facebook.com/apps/)
 
 ```bash
 # .env
@@ -27,12 +28,16 @@ OAUTH_FACEBOOK_SECRET=facebook_secret
 
 OAUTH_GOOGLE_CLIENT_ID=google_client_id
 OAUTH_GOOGLE_CLIENT_SECRET=google_client_secret
+
+OAUTH_INSTAGRAM_ID=instagram_id
+OAUTH_INSTAGRAM_SECRET=instagram_secret
 ```
 
 #### Callback URL
 - For Facebook `{BASE_URL}/oauth/check/facebook`
 - For GitHub `{BASE_URL}/oauth/check/github`
 - For Google `{BASE_URL}/oauth/check/google`
+- For Instagram `{BASE_URL}/oauth/check/instagram`
 
 ### DOCS
 [OAuth / Social Integration for Symfony: KnpUOAuth2ClientBundle](https://github.com/knpuniversity/oauth2-client-bundle)
